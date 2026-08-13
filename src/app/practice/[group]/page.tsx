@@ -188,7 +188,7 @@ function PracticeRunner({
                         else if (isSelected) style = "border-wrong-border bg-wrong-bg text-wrong-text";
                         return (
                           <div key={opt.id} className={`rounded-lg border-2 px-3 py-2 text-sm ${style}`}>
-                            {opt.text}
+                            <span className="whitespace-pre-line">{opt.text}</span>
                             {isCorrectOption && <span className="ml-2 font-semibold">✓ Đáp án đúng</span>}
                             {isSelected && !isCorrectOption && (
                               <span className="ml-2 font-semibold">✕ Bạn đã chọn</span>
@@ -240,12 +240,12 @@ function PracticeRunner({
                     type="button"
                     onClick={() => handleSelect(opt.id)}
                     disabled={showResult}
-                    className={`flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left text-sm font-medium transition disabled:cursor-default ${style}`}
+                    className={`flex items-start gap-3 rounded-lg border-2 px-4 py-3 text-left text-sm font-medium transition disabled:cursor-default ${style}`}
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-xs">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-xs">
                       {showResult && isCorrectOption ? "✓" : showResult && isSelected ? "✕" : ""}
                     </span>
-                    <span>{opt.text}</span>
+                    <span className="whitespace-pre-line">{opt.text}</span>
                   </button>
                 );
               })}

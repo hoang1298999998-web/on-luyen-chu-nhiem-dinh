@@ -105,7 +105,7 @@ export default function ExamResultPage() {
                   else if (isSelected) style = "border-wrong-border bg-wrong-bg text-wrong-text";
                   return (
                     <div key={opt.id} className={`rounded-lg border-2 px-3 py-2 text-sm ${style}`}>
-                      {opt.text}
+                      <span className="whitespace-pre-line">{opt.text}</span>
                       {isCorrectOption && <span className="ml-2 font-semibold">✓ Đáp án đúng</span>}
                       {isSelected && !isCorrectOption && <span className="ml-2 font-semibold">✕ Bạn đã chọn</span>}
                     </div>

@@ -126,7 +126,7 @@ export default function ExamSessionPage() {
                   type="button"
                   onClick={() => selectAnswer(opt.id)}
                   className={
-                    "flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left text-sm font-medium transition " +
+                    "flex items-start gap-3 rounded-lg border-2 px-4 py-3 text-left text-sm font-medium transition " +
                     (isSelected
                       ? "border-brand-600 bg-brand-50 text-brand-800"
                       : "border-slate-200 bg-white hover:border-brand-300 hover:bg-brand-50")
@@ -134,13 +134,13 @@ export default function ExamSessionPage() {
                 >
                   <span
                     className={
-                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs " +
+                      "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs " +
                       (isSelected ? "border-brand-600 bg-brand-600 text-white" : "border-slate-300")
                     }
                   >
                     {isSelected ? "✓" : ""}
                   </span>
-                  <span>{opt.text}</span>
+                  <span className="whitespace-pre-line">{opt.text}</span>
                 </button>
               );
             })}
