@@ -4,13 +4,12 @@ import { BookIcon, PencilIcon, TrophyIcon, GearIcon } from "@/components/Icon";
 
 export default async function MobileTabBar() {
   const profile = await getCurrentProfile();
-  if (!profile) return null;
 
   const tabs = [
     { href: "/practice", label: "Ôn luyện", Icon: BookIcon },
     { href: "/exam", label: "Thi thật", Icon: PencilIcon },
     { href: "/leaderboard", label: "Xếp hạng", Icon: TrophyIcon },
-    ...(profile.role === "admin" ? [{ href: "/admin", label: "Quản trị", Icon: GearIcon }] : []),
+    ...(profile?.role === "admin" ? [{ href: "/admin", label: "Quản trị", Icon: GearIcon }] : []),
   ];
 
   return (

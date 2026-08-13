@@ -21,24 +21,22 @@ export default async function Navbar() {
           </span>
         </Link>
 
-        {profile && (
-          <nav className="hidden items-center gap-1 md:flex">
-            <Link href="/practice" className={navLinkClass}>
-              Ôn luyện
+        <nav className="hidden items-center gap-1 md:flex">
+          <Link href="/practice" className={navLinkClass}>
+            Ôn luyện
+          </Link>
+          <Link href="/exam" className={navLinkClass}>
+            Thi thật
+          </Link>
+          <Link href="/leaderboard" className={navLinkClass}>
+            Bảng xếp hạng
+          </Link>
+          {profile?.role === "admin" && (
+            <Link href="/admin" className={navLinkClass}>
+              Quản trị
             </Link>
-            <Link href="/exam" className={navLinkClass}>
-              Thi thật
-            </Link>
-            <Link href="/leaderboard" className={navLinkClass}>
-              Bảng xếp hạng
-            </Link>
-            {profile.role === "admin" && (
-              <Link href="/admin" className={navLinkClass}>
-                Quản trị
-              </Link>
-            )}
-          </nav>
-        )}
+          )}
+        </nav>
 
         <div className="flex items-center gap-3">
           {profile ? (
@@ -49,20 +47,9 @@ export default async function Navbar() {
               <LogoutButton />
             </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/login"
-                className="inline-flex min-h-[42px] items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white/90 ring-1 ring-inset ring-white/25 transition hover:bg-white/10"
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-gold-400 px-4 py-2 text-sm font-semibold text-brand-900 shadow-sm transition hover:bg-gold-300"
-              >
-                Đăng ký
-              </Link>
-            </div>
+            <Link href="/admin" className="text-xs font-medium text-brand-100/50 transition hover:text-brand-100">
+              Quản trị
+            </Link>
           )}
         </div>
       </div>

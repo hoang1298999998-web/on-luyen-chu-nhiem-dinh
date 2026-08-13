@@ -1,6 +1,27 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ExamAttempt, ExamConfig, ExamResultQuestion, QuestionOption } from "@/lib/types";
+
+const SESSION_COOKIE = "exam_session";
+
+// Không còn đăng nhập cho người thi -> dùng 1 token ẩn danh lưu trong cookie của
+// trình duyệt để: (a) biết lượt thi "in_progress" nào thuộc về ai khi tải lại trang,
+// (b) không cho người khác xem/nộp bài hộ lượt thi không phải của mình (đoán UUID).
+export function getOrCreateSessionToken(): string {
+  const store = cookies();
+  const existing = store.get(SESSION_COOKIE)?.value;
+  if (existing) return existing;
+
+  const token = crypto.randomUUID();
+  store.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+    path: "/",
+  });
+  return token;
+}
 
 export type QuestionRow = {
   id: string;

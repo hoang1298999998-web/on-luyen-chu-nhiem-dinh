@@ -1,19 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildResultQuestions, fetchQuestionsByIds, getExamConfig } from "@/lib/examServer";
+import { buildResultQuestions, fetchQuestionsByIds, getExamConfig, getOrCreateSessionToken } from "@/lib/examServer";
 import type { ExamAttempt, ExamResult } from "@/lib/types";
 
 // Chấm điểm lượt thi thật ở phía server (không tin dữ liệu điểm số từ client).
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Bạn cần đăng nhập." }, { status: 401 });
-  }
+  const sessionToken = getOrCreateSessionToken();
 
   const body = await request.json().catch(() => null);
   const attemptId: string | undefined = body?.attempt_id;
@@ -36,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   const attempt = attemptRow as ExamAttempt;
 
-  if (attempt.user_id !== user.id) {
+  if (attempt.session_token !== sessionToken) {
     return NextResponse.json({ error: "Bạn không có quyền nộp bài này." }, { status: 403 });
   }
 

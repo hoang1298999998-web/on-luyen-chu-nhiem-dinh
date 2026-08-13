@@ -6,7 +6,6 @@ import Link from "next/link";
 import Timer from "@/components/Timer";
 import ProgressMap, { type QuestionState } from "@/components/ProgressMap";
 import { useCountdown } from "@/lib/useCountdown";
-import { createClient } from "@/lib/supabase/client";
 import type { QuestionOption } from "@/lib/types";
 
 type PracticeQuestion = {
@@ -106,41 +105,6 @@ function PracticeRunner({
   const correctCount = states.filter((s) => s === "correct").length;
   const wrongCount = states.filter((s) => s === "wrong").length;
   const unansweredCount = states.filter((s) => s === "unanswered").length;
-
-  // Lưu lại kết quả ôn luyện vào lịch sử cá nhân (không ảnh hưởng bảng xếp hạng).
-  useEffect(() => {
-    if (!finished) return;
-    (async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const total = questions.length;
-        const score = total > 0 ? Math.round((correctCount / total) * 10000) / 100 : 0;
-
-        await supabase.from("exam_attempts").insert({
-          user_id: user.id,
-          mode: "practice",
-          group_no: groupNo,
-          question_ids: questions.map((q) => q.id),
-          option_order: {},
-          answers,
-          correct_count: correctCount,
-          total_count: total,
-          score,
-          duration_seconds: durationSeconds,
-          submitted_at: new Date().toISOString(),
-          status: "submitted",
-        });
-      } catch {
-        // Không chặn trải nghiệm người dùng nếu việc lưu lịch sử thất bại.
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finished]);
 
   function handleSelect(optionId: string) {
     if (finished) return;

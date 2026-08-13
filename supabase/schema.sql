@@ -129,7 +129,14 @@ create policy "exam_config_admin_write"
 -- =============================================================
 create table if not exists public.exam_attempts (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles (id) on delete cascade,
+  -- Người thi không cần đăng nhập nữa: user_id chỉ còn ý nghĩa lịch sử (luôn null
+  -- cho lượt thi ẩn danh). display_name là tên người dùng tự gõ trước khi thi.
+  -- session_token là 1 token ngẫu nhiên lưu trong cookie trình duyệt, dùng để xác
+  -- định "lượt thi đang dang dở này là của ai" khi tải lại trang, và để không cho
+  -- người khác xem/nộp hộ lượt thi không phải của mình.
+  user_id uuid references public.profiles (id) on delete cascade,
+  display_name text,
+  session_token text,
   mode text not null check (mode in ('practice', 'exam')),
   group_no integer,
   question_ids uuid[] not null,
@@ -145,23 +152,16 @@ create table if not exists public.exam_attempts (
 );
 
 create index if not exists exam_attempts_user_id_idx on public.exam_attempts (user_id);
+create index if not exists exam_attempts_session_token_idx on public.exam_attempts (session_token);
 create index if not exists exam_attempts_leaderboard_idx on public.exam_attempts (mode, status, score desc);
 
 alter table public.exam_attempts enable row level security;
 
-drop policy if exists "exam_attempts_select_own" on public.exam_attempts;
-create policy "exam_attempts_select_own"
-  on public.exam_attempts for select
-  using (auth.uid() = user_id);
-
--- Chỉ cho phép client tự ghi nhận lượt ÔN LUYỆN (không ảnh hưởng bảng xếp hạng)
-drop policy if exists "exam_attempts_insert_practice_own" on public.exam_attempts;
-create policy "exam_attempts_insert_practice_own"
-  on public.exam_attempts for insert
-  with check (auth.uid() = user_id and mode = 'practice');
-
--- Lượt THI THẬT (mode='exam') chỉ được tạo/cập nhật bởi các API route dùng
--- service role key (bỏ qua RLS) -> không có policy insert/update cho mode='exam' ở đây.
+-- Không còn tài khoản người thi -> không có policy select/insert nào cho vai trò
+-- "anon/authenticated" ở bảng này nữa. TẤT CẢ đọc/ghi exam_attempts (tạo lượt thi,
+-- nộp bài, xem kết quả, bảng xếp hạng) đều đi qua API route phía server dùng
+-- service_role key (bỏ qua RLS hoàn toàn) -> client không bao giờ đọc/ghi bảng
+-- này trực tiếp.
 
 -- =============================================================
 -- 5. Cho phép admin xem toàn bộ exam_attempts (thống kê)

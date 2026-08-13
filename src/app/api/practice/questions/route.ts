@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { shuffleArray } from "@/lib/shuffle";
 import type { QuestionOption } from "@/lib/types";
 
-// Trả về danh sách câu hỏi (KÈM đáp án đúng) của 1 bộ ôn luyện.
+// Trả về danh sách câu hỏi (KÈM đáp án đúng) của 1 bộ ôn luyện. Không cần đăng nhập.
 // Ôn luyện được phép lộ đáp án ngay nên không cần giấu qua cơ chế attempt như thi thật.
 // Đáp án của mỗi câu được xáo trộn lại mỗi lần gọi API này.
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Bạn cần đăng nhập." }, { status: 401 });
-  }
-
   const groupParam = request.nextUrl.searchParams.get("group");
   const group = Number(groupParam);
 

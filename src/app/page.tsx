@@ -1,21 +1,13 @@
 import Link from "next/link";
-import { getCurrentProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BookIcon, PencilIcon, TrophyIcon } from "@/components/Icon";
 
 export default async function HomePage() {
-  const profile = await getCurrentProfile();
-
-  let totalQuestions = 0;
-  if (profile) {
-    // Bảng questions chỉ admin đọc trực tiếp được (RLS), nên dùng admin client
-    // phía server để đếm số câu hỏi công khai (không lộ nội dung/đáp án).
-    const supabaseAdmin = createAdminClient();
-    const { count } = await supabaseAdmin
-      .from("questions")
-      .select("id", { count: "exact", head: true });
-    totalQuestions = count ?? 0;
-  }
+  // Bảng questions chỉ admin đọc trực tiếp được (RLS), nên dùng admin client
+  // phía server để đếm số câu hỏi công khai (không lộ nội dung/đáp án).
+  const supabaseAdmin = createAdminClient();
+  const { count } = await supabaseAdmin.from("questions").select("id", { count: "exact", head: true });
+  const totalQuestions = count ?? 0;
 
   return (
     <div className="flex flex-col gap-10">
@@ -29,23 +21,20 @@ export default async function HomePage() {
           <h1 className="mt-3 text-2xl font-bold sm:text-3xl">Ôn luyện &amp; thi thử BTCB 2026</h1>
           <p className="mt-2 max-w-2xl text-brand-100">
             Luyện tập theo từng bộ 50 câu với phản hồi đúng/sai ngay lập tức, hoặc làm một đề thi thử
-            được xáo trộn ngẫu nhiên trong 30 phút giống như thi thật.
+            được xáo trộn ngẫu nhiên trong 30 phút giống như thi thật. Không cần đăng ký tài khoản.
           </p>
-          {!profile && (
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/register" className="btn bg-gold-400 text-brand-900 hover:bg-gold-300">
-                Đăng ký ngay
-              </Link>
-              <Link href="/login" className="btn bg-white/10 text-white ring-1 ring-inset ring-white/30 hover:bg-white/20">
-                Đăng nhập
-              </Link>
-            </div>
-          )}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/exam" className="btn bg-gold-400 text-brand-900 hover:bg-gold-300">
+              Vào thi ngay
+            </Link>
+            <Link href="/practice" className="btn bg-white/10 text-white ring-1 ring-inset ring-white/30 hover:bg-white/20">
+              Ôn luyện
+            </Link>
+          </div>
         </div>
       </section>
 
-      {profile && (
-        <section className="grid gap-5 sm:grid-cols-3">
+      <section className="grid gap-5 sm:grid-cols-3">
           <Link href="/practice" className="card transition hover:shadow-card-hover hover:ring-brand-300">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
               <BookIcon className="h-5 w-5" />
@@ -77,7 +66,6 @@ export default async function HomePage() {
             </p>
           </Link>
         </section>
-      )}
     </div>
   );
 }

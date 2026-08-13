@@ -1,19 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildResultQuestions, fetchQuestionsByIds, getExamConfig } from "@/lib/examServer";
+import { buildResultQuestions, fetchQuestionsByIds, getExamConfig, getOrCreateSessionToken } from "@/lib/examServer";
 import type { ExamAttempt, ExamResult } from "@/lib/types";
 
 // Lấy lại kết quả của 1 lượt thi đã nộp (dùng cho trang kết quả khi tải lại trang).
 export async function GET(request: NextRequest, { params }: { params: { attemptId: string } }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Bạn cần đăng nhập." }, { status: 401 });
-  }
+  const sessionToken = getOrCreateSessionToken();
 
   const admin = createAdminClient();
   const { data: attemptRow } = await admin
@@ -28,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: { attemptI
 
   const attempt = attemptRow as ExamAttempt;
 
-  if (attempt.user_id !== user.id) {
+  if (attempt.session_token !== sessionToken) {
     return NextResponse.json({ error: "Bạn không có quyền xem lượt thi này." }, { status: 403 });
   }
 

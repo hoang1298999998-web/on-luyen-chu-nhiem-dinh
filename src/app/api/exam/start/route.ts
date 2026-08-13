@@ -1,25 +1,20 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { selectExamQuestions, type SelectableQuestion } from "@/lib/examSelect";
 import { shuffleArray } from "@/lib/shuffle";
-import { getExamConfig, reorderOptions, secondsElapsedSince } from "@/lib/examServer";
+import { getExamConfig, getOrCreateSessionToken, reorderOptions, secondsElapsedSince } from "@/lib/examServer";
 import type { ExamAttempt, ExamQuestion, ExamStartResponse } from "@/lib/types";
 
-// Bắt đầu (hoặc tiếp tục) một lượt thi thật.
-// - Nếu người dùng đang có 1 lượt "in_progress" chưa hết giờ -> trả về lượt đó (để refresh trang không mất bài).
+// Bắt đầu (hoặc tiếp tục) một lượt thi thật. Không cần đăng nhập -> danh tính
+// là 1 token ẩn danh lưu trong cookie trình duyệt (xem getOrCreateSessionToken).
+// - Nếu trình duyệt này đang có 1 lượt "in_progress" chưa hết giờ -> trả về lượt đó (để refresh trang không mất bài).
 // - Nếu lượt cũ đã hết giờ -> đánh dấu "expired" rồi tạo lượt mới.
 // - Nếu chưa có lượt nào -> bốc đề mới: random toàn bộ ngân hàng câu hỏi,
 //   giới hạn số câu cùng nguồn theo cấu hình, xáo trộn đáp án từng câu.
-export async function POST() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Bạn cần đăng nhập." }, { status: 401 });
-  }
+export async function POST(request: NextRequest) {
+  const sessionToken = getOrCreateSessionToken();
+  const body = await request.json().catch(() => ({}));
+  const name: string = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
 
   const admin = createAdminClient();
   const config = await getExamConfig();
@@ -27,7 +22,7 @@ export async function POST() {
   const { data: existing } = await admin
     .from("exam_attempts")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("session_token", sessionToken)
     .eq("mode", "exam")
     .eq("status", "in_progress")
     .order("started_at", { ascending: false })
@@ -74,7 +69,11 @@ export async function POST() {
       .eq("id", attempt.id);
   }
 
-  // Bốc đề mới
+  // Bốc đề mới -> bắt buộc phải có tên (đây là lượt thi mới, không phải resume).
+  if (!name) {
+    return NextResponse.json({ error: "Vui lòng nhập tên trước khi bắt đầu thi." }, { status: 400 });
+  }
+
   const { data: pool, error: poolError } = await admin
     .from("questions")
     .select("id, content, options, correct_option_id, source");
@@ -108,7 +107,8 @@ export async function POST() {
   const { data: created, error: insertError } = await admin
     .from("exam_attempts")
     .insert({
-      user_id: user.id,
+      display_name: name,
+      session_token: sessionToken,
       mode: "exam",
       question_ids: selected.map((q) => q.id),
       option_order: optionOrder,

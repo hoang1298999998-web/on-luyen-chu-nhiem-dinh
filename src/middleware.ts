@@ -1,7 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/practice", "/exam", "/leaderboard", "/admin"];
+// Ôn luyện / thi thật / bảng xếp hạng không cần đăng nhập nữa -> chỉ /admin còn
+// bị chặn (dành riêng cho tài khoản có role admin).
+const PROTECTED_PREFIXES = ["/admin"];
 const AUTH_PAGES = ["/login", "/register"];
 
 export async function middleware(request: NextRequest) {

@@ -47,7 +47,9 @@ export type AttemptStatus = "in_progress" | "submitted" | "expired";
 
 export type ExamAttempt = {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  display_name: string | null;
+  session_token: string | null;
   mode: AttemptMode;
   group_no: number | null;
   question_ids: string[];

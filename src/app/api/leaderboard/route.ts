@@ -1,25 +1,16 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { LeaderboardEntry } from "@/lib/types";
 
-// Bảng xếp hạng: điểm CAO NHẤT của mỗi người dùng trong các lượt "thi thật" đã nộp.
+// Bảng xếp hạng: điểm CAO NHẤT của mỗi tên trong các lượt "thi thật" đã nộp.
+// Không cần đăng nhập -> gộp theo display_name (tên người dùng tự gõ trước khi thi).
 // Xếp theo điểm giảm dần, cùng điểm thì ai làm nhanh hơn xếp trên.
 export async function GET() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Bạn cần đăng nhập." }, { status: 401 });
-  }
-
   const admin = createAdminClient();
 
   const { data: attempts, error } = await admin
     .from("exam_attempts")
-    .select("user_id, score, correct_count, total_count, duration_seconds, started_at, submitted_at")
+    .select("display_name, score, correct_count, total_count, duration_seconds, started_at, submitted_at")
     .eq("mode", "exam")
     .eq("status", "submitted")
     .not("score", "is", null);
@@ -32,14 +23,10 @@ export async function GET() {
     return NextResponse.json({ leaderboard: [] as LeaderboardEntry[] });
   }
 
-  const userIds = Array.from(new Set(attempts.map((a) => a.user_id as string)));
-  const { data: profiles } = await admin.from("profiles").select("id, full_name").in("id", userIds);
-  const nameById = new Map((profiles ?? []).map((p) => [p.id as string, p.full_name as string]));
-
-  const bestByUser = new Map<string, LeaderboardEntry & { _submittedAtMs: number }>();
+  const bestByName = new Map<string, LeaderboardEntry & { _submittedAtMs: number }>();
 
   for (const a of attempts) {
-    const userId = a.user_id as string;
+    const name = ((a.display_name as string | null) ?? "").trim() || "Người dùng";
     const score = Number(a.score);
     const timeTakenSeconds = Math.max(
       0,
@@ -49,8 +36,8 @@ export async function GET() {
     );
 
     const candidate = {
-      user_id: userId,
-      full_name: nameById.get(userId) ?? "Người dùng",
+      user_id: name,
+      full_name: name,
       score,
       correct_count: a.correct_count as number,
       total_count: a.total_count as number,
@@ -59,17 +46,18 @@ export async function GET() {
       _submittedAtMs: new Date(a.submitted_at as string).getTime(),
     };
 
-    const existing = bestByUser.get(userId);
+    const key = name.toLowerCase();
+    const existing = bestByName.get(key);
     if (
       !existing ||
       candidate.score > existing.score ||
       (candidate.score === existing.score && candidate.duration_seconds < existing.duration_seconds)
     ) {
-      bestByUser.set(userId, candidate);
+      bestByName.set(key, candidate);
     }
   }
 
-  const leaderboard: LeaderboardEntry[] = Array.from(bestByUser.values())
+  const leaderboard: LeaderboardEntry[] = Array.from(bestByName.values())
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.duration_seconds - b.duration_seconds;
