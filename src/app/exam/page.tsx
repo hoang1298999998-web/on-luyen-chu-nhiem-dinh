@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import ExamStartButton from "@/components/ExamStartButton";
+import { DocIcon, ClockIcon, TargetIcon, LockIcon } from "@/components/Icon";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +25,17 @@ export default async function ExamIntroPage() {
         </p>
 
         <ul className="mt-6 flex flex-col gap-3 text-sm text-slate-700">
-          <li className="flex items-center gap-2">
-            <span className="text-lg">📄</span> Số câu hỏi: <b>{questionCount}</b> câu (ngẫu nhiên, đáp án xáo trộn)
+          <li className="flex items-center gap-3">
+            <DocIcon className="h-5 w-5 shrink-0 text-brand-600" /> Số câu hỏi: <b>{questionCount}</b> câu (ngẫu nhiên, đáp án xáo trộn)
           </li>
-          <li className="flex items-center gap-2">
-            <span className="text-lg">⏱</span> Thời gian làm bài: <b>{durationMinutes} phút</b>
+          <li className="flex items-center gap-3">
+            <ClockIcon className="h-5 w-5 shrink-0 text-brand-600" /> Thời gian làm bài: <b>{durationMinutes} phút</b>
           </li>
-          <li className="flex items-center gap-2">
-            <span className="text-lg">🎯</span> Điểm đạt: <b>≥ {passPercentage}%</b>
+          <li className="flex items-center gap-3">
+            <TargetIcon className="h-5 w-5 shrink-0 text-brand-600" /> Điểm đạt: <b>≥ {passPercentage}%</b>
           </li>
-          <li className="flex items-center gap-2">
-            <span className="text-lg">🔒</span> Đáp án đúng chỉ hiện <b>sau khi nộp bài</b>
+          <li className="flex items-center gap-3">
+            <LockIcon className="h-5 w-5 shrink-0 text-brand-600" /> Đáp án đúng chỉ hiện <b>sau khi nộp bài</b>
           </li>
         </ul>
 

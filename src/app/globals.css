@@ -1,3 +1,7 @@
+/* Hallmark · macrostructure: App Dashboard (custom, app-scope) · genre: modern-minimal
+ * theme: custom indigo-navy + gold accent · display: Be Vietnam Pro · body: Inter
+ * design-system: design.md · designed-as-app
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,29 +11,42 @@ body {
   height: 100%;
 }
 
+html {
+  overflow-x: clip;
+}
+
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #f6f5fb;
+  color: #1c2440;
+  font-family: var(--font-body), system-ui, sans-serif;
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition duration-150 ease-out active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
   }
   .btn-secondary {
-    @apply btn bg-white text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50;
+    @apply btn bg-white text-brand-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700;
+    @apply btn bg-wrong-text text-white shadow-sm hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wrong-text;
   }
   .card {
-    @apply rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200;
+    @apply rounded-2xl bg-white p-6 shadow-card ring-1 ring-slate-200/70;
   }
   .input {
-    @apply block w-full rounded-lg border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm;
+    @apply block min-h-[42px] w-full rounded-lg border-0 px-3.5 py-2 text-brand-900 shadow-sm ring-1 ring-inset ring-slate-300 transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-slate-700;

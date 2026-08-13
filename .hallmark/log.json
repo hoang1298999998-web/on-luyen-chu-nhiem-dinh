@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2026-08-13",
+    "macrostructure": "App Dashboard (custom, app-scope)",
+    "theme": "custom",
+    "theme_axes": "light (paper #f6f5fb) / grotesk-sans (Be Vietnam Pro) / cool-indigo-navy with gold accent",
+    "vibe": "official, trustworthy, modern, mobile-first",
+    "enrichment": "none",
+    "scope": "app",
+    "brief": "BTCB 2026 exam-prep app — redesign away from generic Tailwind-blue default, mobile-first nav"
+  }
+]
