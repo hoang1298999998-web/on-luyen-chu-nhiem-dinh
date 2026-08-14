@@ -1,13 +1,9 @@
 import Link from "next/link";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { BookIcon, PencilIcon, TrophyIcon } from "@/components/Icon";
+import { BookIcon, PencilIcon, ChartIcon } from "@/components/Icon";
+import { QUESTIONS } from "@/data/questions";
 
-export default async function HomePage() {
-  // Bảng questions chỉ admin đọc trực tiếp được (RLS), nên dùng admin client
-  // phía server để đếm số câu hỏi công khai (không lộ nội dung/đáp án).
-  const supabaseAdmin = createAdminClient();
-  const { count } = await supabaseAdmin.from("questions").select("id", { count: "exact", head: true });
-  const totalQuestions = count ?? 0;
+export default function HomePage() {
+  const totalQuestions = QUESTIONS.length;
 
   return (
     <div className="flex flex-col gap-10">
@@ -21,11 +17,12 @@ export default async function HomePage() {
           <h1 className="mt-3 text-2xl font-bold sm:text-3xl">Ôn luyện &amp; thi thử BTCB 2026</h1>
           <p className="mt-2 max-w-2xl text-brand-100">
             Luyện tập theo từng bộ 50 câu với phản hồi đúng/sai ngay lập tức, hoặc làm một đề thi thử
-            được xáo trộn ngẫu nhiên trong 30 phút giống như thi thật. Không cần đăng ký tài khoản.
+            được xáo trộn ngẫu nhiên giống như thi thật. Không cần đăng ký tài khoản, không cần server —
+            mọi dữ liệu chạy ngay trong trình duyệt của bạn.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/exam" className="btn bg-gold-400 text-brand-900 hover:bg-gold-300">
-              Vào thi ngay
+              Vào thi thử
             </Link>
             <Link href="/practice" className="btn bg-white/10 text-white ring-1 ring-inset ring-white/30 hover:bg-white/20">
               Ôn luyện
@@ -35,37 +32,38 @@ export default async function HomePage() {
       </section>
 
       <section className="grid gap-5 sm:grid-cols-3">
-          <Link href="/practice" className="card transition hover:shadow-card-hover hover:ring-brand-300">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-              <BookIcon className="h-5 w-5" />
-            </div>
-            <h2 className="text-lg font-semibold text-brand-950">Ôn luyện</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Làm từng bộ 50 câu, biết đúng/sai ngay khi chọn đáp án. Hiện có {totalQuestions} câu hỏi
-              trong ngân hàng đề.
-            </p>
-          </Link>
+        <Link href="/practice" className="card transition hover:shadow-card-hover hover:ring-brand-300">
+          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+            <BookIcon className="h-5 w-5" />
+          </div>
+          <h2 className="text-lg font-semibold text-brand-950">Ôn luyện</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Làm từng bộ 50 câu, biết đúng/sai ngay khi chọn đáp án. Hiện có {totalQuestions} câu hỏi
+            trong ngân hàng đề.
+          </p>
+        </Link>
 
-          <Link href="/exam" className="card transition hover:shadow-card-hover hover:ring-brand-300">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-              <PencilIcon className="h-5 w-5" />
-            </div>
-            <h2 className="text-lg font-semibold text-brand-950">Thi thật</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Một đề ngẫu nhiên, đáp án xáo trộn, làm trong 30 phút. Kết quả chỉ hiện sau khi nộp bài.
-            </p>
-          </Link>
+        <Link href="/exam" className="card transition hover:shadow-card-hover hover:ring-brand-300">
+          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+            <PencilIcon className="h-5 w-5" />
+          </div>
+          <h2 className="text-lg font-semibold text-brand-950">Thi thử</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Một đề ngẫu nhiên, đáp án xáo trộn, làm trong thời gian giới hạn. Đáp án đúng chỉ hiện sau
+            khi nộp bài.
+          </p>
+        </Link>
 
-          <Link href="/leaderboard" className="card transition hover:shadow-card-hover hover:ring-brand-300">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gold-50 text-gold-600">
-              <TrophyIcon className="h-5 w-5" />
-            </div>
-            <h2 className="text-lg font-semibold text-brand-950">Bảng xếp hạng</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Xem điểm số cao nhất của các lượt thi thật từ tất cả người dùng.
-            </p>
-          </Link>
-        </section>
+        <Link href="/history" className="card transition hover:shadow-card-hover hover:ring-brand-300">
+          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gold-50 text-gold-600">
+            <ChartIcon className="h-5 w-5" />
+          </div>
+          <h2 className="text-lg font-semibold text-brand-950">Lịch sử làm bài</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Xem lại điểm số và đáp án các lượt ôn luyện / thi thử đã làm trên máy này.
+          </p>
+        </Link>
+      </section>
     </div>
   );
 }

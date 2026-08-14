@@ -1,10 +1,6 @@
 import Link from "next/link";
-import { getCurrentProfile } from "@/lib/auth";
-import LogoutButton from "@/components/LogoutButton";
 
-export default async function Navbar() {
-  const profile = await getCurrentProfile();
-
+export default function Navbar() {
   const navLinkClass =
     "rounded-lg px-3 py-2 text-sm font-medium text-brand-100/80 transition hover:bg-white/10 hover:text-white";
 
@@ -26,32 +22,12 @@ export default async function Navbar() {
             Ôn luyện
           </Link>
           <Link href="/exam" className={navLinkClass}>
-            Thi thật
+            Thi thử
           </Link>
-          <Link href="/leaderboard" className={navLinkClass}>
-            Bảng xếp hạng
+          <Link href="/history" className={navLinkClass}>
+            Lịch sử
           </Link>
-          {profile?.role === "admin" && (
-            <Link href="/admin" className={navLinkClass}>
-              Quản trị
-            </Link>
-          )}
         </nav>
-
-        <div className="flex items-center gap-3">
-          {profile ? (
-            <>
-              <span className="hidden text-sm text-brand-100/80 sm:inline">
-                Xin chào, <span className="font-semibold text-white">{profile.full_name}</span>
-              </span>
-              <LogoutButton />
-            </>
-          ) : (
-            <Link href="/admin" className="text-xs font-medium text-brand-100/50 transition hover:text-brand-100">
-              Quản trị
-            </Link>
-          )}
-        </div>
       </div>
     </header>
   );

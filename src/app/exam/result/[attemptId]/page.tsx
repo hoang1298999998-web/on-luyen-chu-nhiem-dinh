@@ -3,30 +3,27 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import type { ExamResult } from "@/lib/types";
+import { getAttemptById } from "@/lib/localAttempts";
+import { PASS_PERCENTAGE } from "@/lib/config";
+import { optionLabel } from "@/lib/shuffle";
+import type { Attempt } from "@/lib/types";
 
 export default function ExamResultPage() {
   const params = useParams<{ attemptId: string }>();
-  const [result, setResult] = useState<ExamResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState<Attempt | null | undefined>(undefined);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`/api/exam/${params.attemptId}`, { cache: "no-store" });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Không tải được kết quả.");
-        setResult(json);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Không tải được kết quả.");
-      }
-    })();
+    setAttempt(getAttemptById(params.attemptId));
   }, [params.attemptId]);
 
-  if (error) {
+  if (attempt === undefined) {
+    return <div className="card text-center text-slate-500">Đang tải kết quả...</div>;
+  }
+
+  if (!attempt) {
     return (
       <div className="card mx-auto max-w-lg text-center">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600">Không tìm thấy kết quả này trên máy của bạn.</p>
         <Link href="/exam" className="btn-secondary mt-4 inline-flex">
           Quay lại
         </Link>
@@ -34,37 +31,26 @@ export default function ExamResultPage() {
     );
   }
 
-  if (!result) {
-    return <div className="card text-center text-slate-500">Đang tải kết quả...</div>;
-  }
-
-  const wrongCount = result.total_count - result.correct_count;
-  const timeTakenSeconds = Math.max(
-    0,
-    Math.round((new Date(result.submitted_at).getTime() - new Date(result.started_at).getTime()) / 1000)
-  );
-  const minutes = Math.floor(timeTakenSeconds / 60);
-  const seconds = timeTakenSeconds % 60;
+  const passed = attempt.score >= PASS_PERCENTAGE;
+  const wrongCount = attempt.total_count - attempt.correct_count;
+  const minutes = Math.floor(attempt.time_taken_seconds / 60);
+  const seconds = attempt.time_taken_seconds % 60;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className={`card text-center ${result.passed ? "" : ""}`}>
-        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Kết quả thi thật</p>
-        <p
-          className={`mt-2 text-5xl font-extrabold ${
-            result.passed ? "text-correct-text" : "text-wrong-text"
-          }`}
-        >
-          {result.score}%
+      <div className="card text-center">
+        <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Kết quả thi thử</p>
+        <p className={`mt-2 text-5xl font-extrabold ${passed ? "text-correct-text" : "text-wrong-text"}`}>
+          {attempt.score}%
         </p>
         <p className="mt-2 text-lg font-semibold text-slate-800">
-          {result.passed ? "✅ Đạt yêu cầu" : "❌ Chưa đạt"}
-          <span className="ml-2 font-normal text-slate-500">(cần ≥ {result.pass_percentage}%)</span>
+          {passed ? "✅ Đạt yêu cầu" : "❌ Chưa đạt"}
+          <span className="ml-2 font-normal text-slate-500">(cần ≥ {PASS_PERCENTAGE}%)</span>
         </p>
 
         <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
           <div className="rounded-lg bg-correct-bg p-3">
-            <p className="text-2xl font-bold text-correct-text">{result.correct_count}</p>
+            <p className="text-2xl font-bold text-correct-text">{attempt.correct_count}</p>
             <p className="text-correct-text">Câu đúng</p>
           </div>
           <div className="rounded-lg bg-wrong-bg p-3">
@@ -83,8 +69,8 @@ export default function ExamResultPage() {
           <Link href="/exam" className="btn-primary">
             Thi lại
           </Link>
-          <Link href="/leaderboard" className="btn-secondary">
-            Xem bảng xếp hạng
+          <Link href="/history" className="btn-secondary">
+            Xem lịch sử
           </Link>
         </div>
       </div>
@@ -92,12 +78,12 @@ export default function ExamResultPage() {
       <div className="card">
         <h2 className="mb-4 text-lg font-bold text-slate-900">Xem lại bài làm</h2>
         <div className="flex flex-col gap-5">
-          {result.questions.map((q, i) => (
+          {attempt.questions.map((q, i) => (
             <div key={q.id} className="border-b border-slate-100 pb-5 last:border-0">
               <p className="text-sm font-semibold text-slate-500">Câu {i + 1}</p>
               <p className="mt-1 font-medium text-slate-900">{q.content}</p>
               <div className="mt-3 flex flex-col gap-2">
-                {q.options.map((opt) => {
+                {q.options.map((opt, optIndex) => {
                   const isCorrectOption = opt.id === q.correct_option_id;
                   const isSelected = opt.id === q.selected_option_id;
                   let style = "border-slate-200 text-slate-600";
@@ -105,7 +91,9 @@ export default function ExamResultPage() {
                   else if (isSelected) style = "border-wrong-border bg-wrong-bg text-wrong-text";
                   return (
                     <div key={opt.id} className={`rounded-lg border-2 px-3 py-2 text-sm ${style}`}>
-                      <span className="whitespace-pre-line">{opt.text}</span>
+                      <span className="whitespace-pre-line">
+                        <b>{optionLabel(optIndex)}.</b> {opt.text}
+                      </span>
                       {isCorrectOption && <span className="ml-2 font-semibold">✓ Đáp án đúng</span>}
                       {isSelected && !isCorrectOption && <span className="ml-2 font-semibold">✕ Bạn đã chọn</span>}
                     </div>

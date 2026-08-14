@@ -1,64 +1,57 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Timer from "@/components/Timer";
 import ProgressMap, { type QuestionState } from "@/components/ProgressMap";
 import { useCountdown } from "@/lib/useCountdown";
-import type { QuestionOption } from "@/lib/types";
+import { shuffleArray, optionLabel } from "@/lib/shuffle";
+import { QUESTIONS } from "@/data/questions";
+import { PRACTICE_GROUP_SIZE, PRACTICE_DURATION_MINUTES } from "@/lib/config";
+import { saveAttempt } from "@/lib/localAttempts";
+import type { Attempt, Question } from "@/lib/types";
 
-type PracticeQuestion = {
-  id: string;
-  content: string;
-  source: string | null;
-  correct_option_id: string;
-  options: QuestionOption[];
-};
-
-type PracticeData = {
-  group_no: number;
-  duration_seconds: number;
-  questions: PracticeQuestion[];
-};
+function buildSession(groupNo: number): Question[] {
+  const from = (groupNo - 1) * PRACTICE_GROUP_SIZE;
+  const to = from + PRACTICE_GROUP_SIZE;
+  return QUESTIONS.slice(from, to).map((q) => ({ ...q, options: shuffleArray(q.options) }));
+}
 
 export default function PracticeGroupPage() {
   const params = useParams<{ group: string }>();
-  const groupNo = params.group;
-
-  const [data, setData] = useState<PracticeData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const groupNo = Number(params.group);
+  const isValidGroup = Number.isInteger(groupNo) && groupNo >= 1;
   const [sessionId, setSessionId] = useState(0);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/practice/questions?group=${groupNo}`, { cache: "no-store" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Có lỗi xảy ra, vui lòng thử lại.");
-      setData(json as PracticeData);
-      setSessionId((id) => id + 1);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Có lỗi xảy ra, vui lòng thử lại.");
-    } finally {
-      setLoading(false);
-    }
-  }, [groupNo]);
+  // Xáo trộn đáp án bằng Math.random() nên CHỈ được tính ở client (sau khi mount),
+  // không được tính trong lúc render (kể cả render đầu ở client) — nếu không sẽ
+  // lệch với HTML server trả về và gây lỗi hydration.
+  const [questions, setQuestions] = useState<Question[] | null>(null);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    setQuestions(isValidGroup ? buildSession(groupNo) : []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupNo, sessionId]);
 
-  if (loading) {
+  if (!isValidGroup) {
+    return (
+      <div className="card text-center">
+        <p className="text-red-600">Bộ câu hỏi không hợp lệ.</p>
+        <Link href="/practice" className="btn-secondary mt-4 inline-flex">
+          Quay lại
+        </Link>
+      </div>
+    );
+  }
+
+  if (questions === null) {
     return <div className="card text-center text-slate-500">Đang tải câu hỏi...</div>;
   }
 
-  if (error || !data) {
+  if (questions.length === 0) {
     return (
       <div className="card text-center">
-        <p className="text-red-600">{error ?? "Không tải được câu hỏi."}</p>
+        <p className="text-red-600">Không tìm thấy câu hỏi cho bộ này.</p>
         <Link href="/practice" className="btn-secondary mt-4 inline-flex">
           Quay lại
         </Link>
@@ -69,10 +62,10 @@ export default function PracticeGroupPage() {
   return (
     <PracticeRunner
       key={sessionId}
-      groupNo={data.group_no}
-      questions={data.questions}
-      durationSeconds={data.duration_seconds}
-      onRestart={load}
+      groupNo={groupNo}
+      questions={questions}
+      durationSeconds={PRACTICE_DURATION_MINUTES * 60}
+      onRestart={() => setSessionId((id) => id + 1)}
     />
   );
 }
@@ -84,13 +77,15 @@ function PracticeRunner({
   onRestart,
 }: {
   groupNo: number;
-  questions: PracticeQuestion[];
+  questions: Question[];
   durationSeconds: number;
   onRestart: () => void;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [startedAt] = useState(() => new Date().toISOString());
+  const savedRef = useRef(false);
 
   const secondsLeft = useCountdown(durationSeconds, () => setFinished(true));
 
@@ -115,6 +110,38 @@ function PracticeRunner({
   function goTo(index: number) {
     setCurrentIndex(Math.max(0, Math.min(questions.length - 1, index)));
   }
+
+  function finishNow() {
+    setFinished(true);
+  }
+
+  useEffect(() => {
+    if (!finished || savedRef.current) return;
+    savedRef.current = true;
+    const attempt: Attempt = {
+      id: crypto.randomUUID(),
+      mode: "practice",
+      group_no: groupNo,
+      display_name: null,
+      questions: questions.map((q) => ({
+        id: q.id,
+        content: q.content,
+        source: q.source,
+        correct_option_id: q.correct_option_id,
+        options: q.options,
+        selected_option_id: answers[q.id] ?? null,
+      })),
+      correct_count: correctCount,
+      total_count: questions.length,
+      score: Math.round((correctCount / questions.length) * 100),
+      duration_seconds: durationSeconds,
+      time_taken_seconds: Math.max(0, durationSeconds - secondsLeft),
+      started_at: startedAt,
+      submitted_at: new Date().toISOString(),
+    };
+    saveAttempt(attempt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   const selectedForCurrent = answers[current.id];
 
@@ -154,7 +181,13 @@ function PracticeRunner({
               {questions.length} câu ({unansweredCount} câu chưa làm).
             </p>
             <div className="mt-2 flex gap-3">
-              <button onClick={onRestart} className="btn-primary">
+              <button
+                onClick={() => {
+                  savedRef.current = false;
+                  onRestart();
+                }}
+                className="btn-primary"
+              >
                 Làm lại (xáo trộn mới)
               </button>
               <Link href="/practice" className="btn-secondary">
@@ -180,7 +213,7 @@ function PracticeRunner({
                     </div>
                     <p className="mt-1 font-medium text-slate-900">{q.content}</p>
                     <div className="mt-3 flex flex-col gap-2">
-                      {q.options.map((opt) => {
+                      {q.options.map((opt, optIndex) => {
                         const isCorrectOption = opt.id === q.correct_option_id;
                         const isSelected = opt.id === selected;
                         let style = "border-slate-200 text-slate-600";
@@ -188,7 +221,9 @@ function PracticeRunner({
                         else if (isSelected) style = "border-wrong-border bg-wrong-bg text-wrong-text";
                         return (
                           <div key={opt.id} className={`rounded-lg border-2 px-3 py-2 text-sm ${style}`}>
-                            <span className="whitespace-pre-line">{opt.text}</span>
+                            <span className="whitespace-pre-line">
+                              <b>{optionLabel(optIndex)}.</b> {opt.text}
+                            </span>
                             {isCorrectOption && <span className="ml-2 font-semibold">✓ Đáp án đúng</span>}
                             {isSelected && !isCorrectOption && (
                               <span className="ml-2 font-semibold">✕ Bạn đã chọn</span>
@@ -220,7 +255,7 @@ function PracticeRunner({
             <p className="text-base font-medium leading-relaxed text-slate-900">{current.content}</p>
 
             <div className="mt-5 flex flex-col gap-2.5">
-              {current.options.map((opt) => {
+              {current.options.map((opt, optIndex) => {
                 const isSelected = selectedForCurrent === opt.id;
                 const isCorrectOption = opt.id === current.correct_option_id;
                 const showResult = !!selectedForCurrent;
@@ -243,7 +278,11 @@ function PracticeRunner({
                     className={`flex items-start gap-3 rounded-lg border-2 px-4 py-3 text-left text-sm font-medium transition disabled:cursor-default ${style}`}
                   >
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-xs">
-                      {showResult && isCorrectOption ? "✓" : showResult && isSelected ? "✕" : ""}
+                      {showResult && isCorrectOption
+                        ? "✓"
+                        : showResult && isSelected
+                        ? "✕"
+                        : optionLabel(optIndex)}
                     </span>
                     <span className="whitespace-pre-line">{opt.text}</span>
                   </button>
@@ -272,7 +311,7 @@ function PracticeRunner({
           <div className="card h-fit">
             <h3 className="mb-3 text-sm font-semibold text-slate-700">Danh sách câu hỏi</h3>
             <ProgressMap states={states} currentIndex={currentIndex} onJump={goTo} />
-            <button onClick={() => setFinished(true)} className="btn-secondary mt-4 w-full">
+            <button onClick={finishNow} className="btn-secondary mt-4 w-full">
               Kết thúc ôn luyện
             </button>
           </div>
